@@ -22,6 +22,7 @@ app.get("/", (req, res) => {
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true },
 });
+
 const User = mongoose.model("User", userSchema);
 
 const exerciseSchema = new mongoose.Schema({
@@ -30,6 +31,7 @@ const exerciseSchema = new mongoose.Schema({
   duration: { type: Number, required: true },
   date: { type: Date, required: true },
 });
+
 const Exercise = mongoose.model("Exercise", exerciseSchema);
 
 // === Routes ===
@@ -47,8 +49,12 @@ app.post("/api/users", async (req, res) => {
 
 // Get all users
 app.get("/api/users", async (req, res) => {
-  const users = await User.find({}, "_id username");
-  res.json(users);
+  try {
+    const users = await User.find({}, "_id username");
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
 });
 
 // Add exercise
@@ -61,6 +67,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
     if (!user) return res.status(400).json({ error: "User not found" });
 
     const exerciseDate = date ? new Date(date) : new Date();
+
     const newExercise = new Exercise({
       userId,
       description,
@@ -74,7 +81,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
       _id: user._id,
       username: user.username,
       date: savedExercise.date.toDateString(),
-      duration: savedExercise.duration,
+      duration: Number(savedExercise.duration),
       description: savedExercise.description,
     });
   } catch (err) {
@@ -104,7 +111,7 @@ app.get("/api/users/:_id/logs", async (req, res) => {
     const exercises = await query.exec();
     const log = exercises.map((e) => ({
       description: e.description,
-      duration: e.duration,
+      duration: Number(e.duration),
       date: e.date.toDateString(),
     }));
 
